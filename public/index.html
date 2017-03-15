@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Clarifai Demo</title>
+    <script type="text/javascript" src="https://sdk.clarifai.com/js/clarifai-latest.js"></script>
+    <script>
+      // Script Source for Firebase Commented Out
+      // https://www.gstatic.com/firebasejs/3.7.1/firebase.js
+      // https://www.gstatic.com/firebasejs/3.7.1/firebase-app.js
+      // https://www.gstatic.com/firebasejs/3.7.1/firebase-auth.js
+      // https://www.gstatic.com/firebasejs/3.7.1/firebase-database.js
+      // https://www.gstatic.com/firebasejs/3.7.1/firebase-storage.js
+
+      // var config = {
+      //   apiKey: "AIzaSyBwa6i6KQw4Hjnb9ggYMrutAL9d5Bh-vOU",
+      //   authDomain: "https://clarifai-41076.firebaseapp.com",
+      //   databaseURL: "https://clarifai-41076.firebaseio.com/",
+      //   storageBucket: "gs://clarifai-41076.appspot.com",
+      // };
+
+      // firebase.initializeApp(config);
+      // var storage = firebase.storage();
+      // // Create a root reference
+      // var storageRef = storage.ref();
+
+      // // Create a reference to 'mountains.jpg'
+      // var mountainsRef = storageRef.child('mountains.jpg');
+
+      // // Create a reference to 'images/mountains.jpg'
+      // var mountainImagesRef = storageRef.child('images/mountains.jpg');
+
+      // // While the file names are the same, the references point to different files
+      // mountainsRef.name === mountainImagesRef.name            // true
+      // mountainsRef.fullPath === mountainImagesRef.fullPath    // false
+
+      var file;
+      var downloadURL;
+
+      // Firebase Upload function
+      // function upload() {
+      //   // Read an uploaded file
+      //   file = document.getElementById("image").files[0];
+
+      //   // Create the file metadata
+      //   var metadata = {
+      //     contentType: 'image/jpeg'
+      //   };
+
+      //   // Upload file and metadata to the object 'images/mountains.jpg'
+      //   var uploadTask = storageRef.child('images/' + file.name).put(file, metadata);
+
+      //   uploadTask.on(firebase.storage.TaskEvent.STATE_CHANGED,
+      //     function() {
+      //       // Upload completed successfully, now we can get the download URL
+      //       downloadURL = uploadTask.snapshot.downloadURL;
+      //       document.getElementById("message").innerHTML += downloadURL;
+      //     }
+      //   );
+
+        var app = new Clarifai.App(
+          'R7jvKD4xSuweaLHQlhF1fVwUiIQxSwnl3vlMuiVY',
+          'FOJ6JqizNRu-Ca3j9x1O3hMWnYflVJ90pCWaXLqC'
+        );
+
+        app.models.predict(Clarifai.GENERAL_MODEL, downloadURL).then(
+          function(response) {
+            var results = response.outputs[0].data.concepts;
+            for(i in results) {
+              document.getElementById("message").innerHTML += results[i].name + " ";
+            }
+          },
+          function(err) {
+            console.error(err);
+          }
+        );
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Upload an image file</h1>
+    <input type="file" id="image">
+    <button onclick="upload()">Upload</button>
+    <h2>Results</h2>
+    <div id="message">
+    </div>
+  </body>
+</html>
