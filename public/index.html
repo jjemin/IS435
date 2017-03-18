@@ -4,66 +4,148 @@
     <meta charset="utf-8">
     <title>Clarifai Demo</title>
     <script type="text/javascript" src="https://sdk.clarifai.com/js/clarifai-latest.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/3.7.1/firebase.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/3.7.1/firebase-app.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/3.7.1/firebase-auth.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/3.7.1/firebase-database.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/firebasejs/3.7.1/firebase-storage.js"></script>
     <script>
-      // Script Source for Firebase Commented Out
-      // https://www.gstatic.com/firebasejs/3.7.1/firebase.js
-      // https://www.gstatic.com/firebasejs/3.7.1/firebase-app.js
-      // https://www.gstatic.com/firebasejs/3.7.1/firebase-auth.js
-      // https://www.gstatic.com/firebasejs/3.7.1/firebase-database.js
-      // https://www.gstatic.com/firebasejs/3.7.1/firebase-storage.js
-
-      // var config = {
-      //   apiKey: "AIzaSyBwa6i6KQw4Hjnb9ggYMrutAL9d5Bh-vOU",
-      //   authDomain: "https://clarifai-41076.firebaseapp.com",
-      //   databaseURL: "https://clarifai-41076.firebaseio.com/",
-      //   storageBucket: "gs://clarifai-41076.appspot.com",
-      // };
-
-      // firebase.initializeApp(config);
-      // var storage = firebase.storage();
-      // // Create a root reference
-      // var storageRef = storage.ref();
-
-      // // Create a reference to 'mountains.jpg'
-      // var mountainsRef = storageRef.child('mountains.jpg');
-
-      // // Create a reference to 'images/mountains.jpg'
-      // var mountainImagesRef = storageRef.child('images/mountains.jpg');
-
-      // // While the file names are the same, the references point to different files
-      // mountainsRef.name === mountainImagesRef.name            // true
-      // mountainsRef.fullPath === mountainImagesRef.fullPath    // false
-
+      var GoogleAuth;
       var file;
+      var SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
+      function handleClientLoad() {
+        // Load the API's client and auth2 modules.
+        // Call the initClient function after the modules load.
+        gapi.load('client:auth2', initClient);
+      }
+
+      function initClient() {
+        // Retrieve the discovery document for version 3 of Google Drive API.
+        // In practice, your app can retrieve one or more discovery documents.
+        var discoveryUrl = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+
+        // Initialize the gapi.client object, which app uses to make API requests.
+        // Get API key and client ID from API Console.
+        // 'scope' field specifies space-delimited list of access scopes.
+        gapi.client.init({
+            'apiKey': 'AIzaSyBwa6i6KQw4Hjnb9ggYMrutAL9d5Bh-vOU',
+            'discoveryDocs': [discoveryUrl],
+            'clientId': '251351225783-e2ibimjakhnk5l9gt4od5muc4ttptsg4.apps.googleusercontent.com',
+            'scope': 'https://www.googleapis.com/auth/cloud-platform'
+        }).then(function () {
+          GoogleAuth = gapi.auth2.getAuthInstance();
+
+          // Listen for sign-in state changes.
+          GoogleAuth.isSignedIn.listen(updateSigninStatus);
+
+          // Handle initial sign-in state. (Determine if user is already signed in.)
+          var user = GoogleAuth.currentUser.get();
+          setSigninStatus();
+
+          // Call handleAuthClick function when user clicks on
+          //      "Sign In/Authorize" button.
+          $('#sign-in-or-out-button').click(function() {
+            handleAuthClick();
+          }); 
+          $('#revoke-access-button').click(function() {
+            revokeAccess();
+          }); 
+        });
+      }
+
+      function handleAuthClick() {
+        if (GoogleAuth.isSignedIn.get()) {
+          // User is authorized and has clicked 'Sign out' button.
+          GoogleAuth.signOut();
+        } else {
+          // User is not signed in. Start Google auth flow.
+          GoogleAuth.signIn();
+        }
+      }
+
+      function revokeAccess() {
+        GoogleAuth.disconnect();
+      }
+
+      function setSigninStatus(isSignedIn) {
+        var user = GoogleAuth.currentUser.get();
+        var isAuthorized = user.hasGrantedScopes(SCOPE);
+        if (isAuthorized) {
+          // $('#sign-in-or-out-button').html('Sign out');
+          // $('#revoke-access-button').css('display', 'inline-block');
+          // $('#auth-status').html('You are currently signed in and have granted ' +
+          //     'access to this app.');
+          var request = gapi.client.request({
+            'method': 'POST',
+            'path': '/storage/v1/b/clarifai-41076.appspot.com/o/images%2F'+file.name+'/acl',
+            'body': {'entity': 'allUsers', 'role': 'READER'}
+          });
+          // Execute the API request.
+          request.execute(function(response) { 
+            console.log(response);
+          });
+        } else {
+          // $('#sign-in-or-out-button').html('Sign In/Authorize');
+          // $('#revoke-access-button').css('display', 'none');
+          // $('#auth-status').html('You have not authorized this app or you are ' +
+          //     'signed out.');
+        }
+      }
+
+      function updateSigninStatus(isSignedIn) {
+        setSigninStatus();
+      }
+
+      var config = {
+        apiKey: "AIzaSyBwa6i6KQw4Hjnb9ggYMrutAL9d5Bh-vOU",
+        authDomain: "https://clarifai-41076.firebaseapp.com",
+        databaseURL: "https://clarifai-41076.firebaseio.com/",
+        storageBucket: "gs://clarifai-41076.appspot.com",
+      };
+      // Initialize Firebase App
+      firebase.initializeApp(config);
+
+      var storage = firebase.storage();
+      var storageRef = storage.ref();
+
       var downloadURL;
+      var directURL;
 
       // Firebase Upload function
-      // function upload() {
-      //   // Read an uploaded file
-      //   file = document.getElementById("image").files[0];
+      function upload() {
+        // Read an uploaded file
+        file = document.getElementById("image").files[0];
 
-      //   // Create the file metadata
-      //   var metadata = {
-      //     contentType: 'image/jpeg'
-      //   };
+        // Create the file metadata
+        var metadata = {
+          contentType: 'image/jpeg'
+        };
 
-      //   // Upload file and metadata to the object 'images/mountains.jpg'
-      //   var uploadTask = storageRef.child('images/' + file.name).put(file, metadata);
+        // Upload file and metadata to the object
+        var uploadTask = storageRef.child('images/' + file.name).put(file, metadata);
 
-      //   uploadTask.on(firebase.storage.TaskEvent.STATE_CHANGED,
-      //     function() {
-      //       // Upload completed successfully, now we can get the download URL
-      //       downloadURL = uploadTask.snapshot.downloadURL;
-      //       document.getElementById("message").innerHTML += downloadURL;
-      //     }
-      //   );
+        uploadTask.on(firebase.storage.TaskEvent.STATE_CHANGED,
+          function() {
+            // Upload completed successfully, now we can get the download URL
+            downloadURL = uploadTask.snapshot.downloadURL;
+            if(downloadURL !== null) {
+              // HTTP Request to make an uploaded image file publicly available
+              handleClientLoad();
+              directURL = "https://storage.googleapis.com/clarifai-41076.appspot.com/images/" + file.name;
+              clarifai(directURL);
+            }
+          }
+        );
+      }
 
+      function clarifai(directURL) {
         var app = new Clarifai.App(
           'R7jvKD4xSuweaLHQlhF1fVwUiIQxSwnl3vlMuiVY',
           'FOJ6JqizNRu-Ca3j9x1O3hMWnYflVJ90pCWaXLqC'
         );
-
-        app.models.predict(Clarifai.GENERAL_MODEL, downloadURL).then(
+        app.models.predict(Clarifai.GENERAL_MODEL, directURL).then(
           function(response) {
             var results = response.outputs[0].data.concepts;
             for(i in results) {
@@ -72,6 +154,7 @@
           },
           function(err) {
             console.error(err);
+            document.getElementById("message").innerHTML += err.data.status.description;
           }
         );
       }
@@ -81,7 +164,7 @@
     <h1>Upload an image file</h1>
     <input type="file" id="image">
     <button onclick="upload()">Upload</button>
-    <h2>Results</h2>
+    <h3>Results</h2>
     <div id="message">
     </div>
   </body>
