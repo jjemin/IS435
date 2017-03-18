@@ -73,10 +73,6 @@
         var user = GoogleAuth.currentUser.get();
         var isAuthorized = user.hasGrantedScopes(SCOPE);
         if (isAuthorized) {
-          // $('#sign-in-or-out-button').html('Sign out');
-          // $('#revoke-access-button').css('display', 'inline-block');
-          // $('#auth-status').html('You are currently signed in and have granted ' +
-          //     'access to this app.');
           var request = gapi.client.request({
             'method': 'POST',
             'path': '/storage/v1/b/clarifai-41076.appspot.com/o/images%2F'+file.name+'/acl',
@@ -86,11 +82,6 @@
           request.execute(function(response) { 
             console.log(response);
           });
-        } else {
-          // $('#sign-in-or-out-button').html('Sign In/Authorize');
-          // $('#revoke-access-button').css('display', 'none');
-          // $('#auth-status').html('You have not authorized this app or you are ' +
-          //     'signed out.');
         }
       }
 
